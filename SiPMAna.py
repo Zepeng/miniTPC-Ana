@@ -11,6 +11,7 @@ class SiPMAna:
     waveforms = 0
     filteredwfs = 0
     charges = 0
+    channel = 0
     wfpath = ''
     qdcpath = ''
     wflen = 0
@@ -22,6 +23,7 @@ class SiPMAna:
         self.qdc = 0 # QDC saved from TD
         self.wflen = wflen #length of waveform used in TD5751
         self.bSaveFig = savefig # set to True to save figures
+        self.channel = ch
         """
         look for a data file assuming the files are stored with the same
         pattern
@@ -40,6 +42,8 @@ class SiPMAna:
             sys.exit()
 
     def LoadWFs(self):
+        #four channels are saved in four different files, \
+        #and each line is a single waveform in the file
         with open(self.wfpath) as f:
             i = 0
             wfs = []
@@ -53,30 +57,53 @@ class SiPMAna:
                     print('Loaded %d of waveforms from file.' % i)
             self.waveforms = np.array(wfs)
             print('Loaded %d waveforms from %s' % (i, self.wfpath))
+    def LoadQDC(self):
+        #four channels are saved in a single file but there are some garbage\
+        #in the QDC file. Select the useful data by line number
+        with open(self.qdcpath) as f:
+            i = 0
+            qdc = []
+            for line in f:
+                qdc = []
+                for item in line.split():
+                    #There are some inf in the data file. I don't know the reason\
+                    #just skip that part of data.
+                    if float(item) < np.Inf:
+                        qdc.append(float(item))
+                fig, ax = plt.subplots()
+                ax.hist(np.array(qdc), bins=np.linspace(np.mean(qdc)-2*np.std(qdc),\
+                        np.mean(qdc) + 2*np.std(qdc), 40),histtype='step')
+                fig.savefig('qdc_%d.pdf' % i)
+                i += 1
 
-ana = SiPMAna(filedir='/junofs/users/weiwl/sipmtest/105-46/', ch=0, wflen=5005)
-SiPMAna.LoadWFs(ana)
-"""
     def PlotWFs(self, entries = [0]):
+        if self.waveforms == 0:
+            self.LoadWFs()
         for entry in entries:
             fig, ax = plt.subplots()
             if entry > np.size(self.waveforms, 0):
                 print('Entry not found in saved waveforms')
                 return
             ax.plot(np.arange(len(self.waveforms[entry])), self.waveforms[entry])
-            fig.savefig('wfs_%d.png' % entry)
+            fig.savefig('wfs_%d_%d.png' % (self.channel, entry) )
+
     def PlotBaseline(self):
+        if self.waveforms == 0:
+            self.LoadWFs()
         baseline = []
-        for wf in self.filteredwfs:
-            for i in range(100, 250):
-                baseline.append(wf[i])
+        for wf in self.waveforms:
+            baseline.append(wf[100:2100] - np.mean(wf[100:2100]))
         fig, ax = plt.subplots()
-        ax.hist(np.array(baseline), bins = np.arange(945, 960, 0.2))
+        ax.hist(np.array(baseline).flatten(), bins=np.linspace(-5,5,20))
         from scipy.stats import norm
         (mu, sigma) = norm.fit(baseline)
         print(mu, sigma)
         fig.savefig('baseline.png')
 
+ana = SiPMAna(filedir='/junofs/users/weiwl/sipmtest/105-46/', ch=1, wflen=5005)
+#SiPMAna.PlotWFs(ana, [0, 1, 2, 3, 4, 5])
+SiPMAna.PlotBaseline(ana)
+"""
     def LowFilter(self):
         from scipy import signal
         fwfs = []
