@@ -40,7 +40,7 @@ def fit():
             label='fit to scope' )
     axs[0].set_xlabel('Time (1/750 MHz-1)')
     axs[0].legend()
-    axs[1].plot(np.arange(len(ADC)), ADC - func(np.arange(len(ADC)), *popt))
+    axs[1].plot(np.arange(len(ADC)), ADC - func(np.arange(len(ADC)), *popt), color='blue')
     axs[1].set_xlabel('Time (1/750 MHz-1)')
     axs[1].set_ylabel('Residual of fit')
     axs[2].hist(ADC - func(np.arange(len(ADC)), *popt), bins=20, histtype='step', color='blue')
