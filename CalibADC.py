@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 def readADC(infile):
     df = pd.read_csv(infile)
     ADC = np.reshape(df.to_numpy(), (1, -1))[0]
-    print(ADC)
     fig, ax = plt.subplots()
     ax.plot(np.arange(len(ADC)), ADC)
     fig.savefig('ADC.png')
@@ -18,7 +17,6 @@ def readScope(infile):
     df = pd.read_fwf(infile, skiprows=skiprows)
     scope = df.iloc[:-1, 0].to_numpy()
     scope = scope.astype(np.float)
-    print(scope)
     fig, ax = plt.subplots()
     ax.plot(np.arange(len(scope)), scope)
     fig.savefig('scope.png')
@@ -27,13 +25,14 @@ def readScope(infile):
 scope = readScope('/afs/ihep.ac.cn/users/w/weiwl/osc.txt')
 from scipy import interpolate
 f = interpolate.interp1d(np.arange(len(scope)) - 10, scope)
-def func(x, b, c, d):
-    return c*f(2500/750.*x+b)+d
+def func(x, a, b, c, d):
+    return c*f(a*x+b)+d
 
 def fit():
     ADC = readADC('/afs/ihep.ac.cn/users/w/weiwl/wave_11.txt')
     from scipy.optimize import curve_fit
-    popt, pcov = curve_fit(func, np.arange(len(ADC)), ADC)
+    p0 = [2500/750., 0, 0, 0]
+    popt, pcov = curve_fit(func, np.arange(len(ADC)), ADC, p0, bounds=((2500./800, -1, -np.inf, -np.inf), (2500./700, np.inf, np.inf, np.inf)) )
     print(popt, pcov)
     fig, axs = plt.subplots(2)
     axs[0].plot(np.arange(len(ADC)), ADC, 'b-', label='ADC channel 11')
