@@ -34,7 +34,7 @@ def fit():
     p0 = [2500/750., 0, 0, 0]
     popt, pcov = curve_fit(func, np.arange(len(ADC)), ADC, p0, bounds=((2500./800, -1, -np.inf, -np.inf), (2500./700, np.inf, np.inf, np.inf)) )
     print(popt, pcov)
-    fig, axs = plt.subplots(2)
+    fig, axs = plt.subplots(3, figsize=(9,15))
     axs[0].plot(np.arange(len(ADC)), ADC, 'b-', label='ADC channel 11')
     axs[0].plot(np.arange(len(ADC)), func(np.arange(len(ADC)), *popt), 'g--',
             label='fit to scope' )
@@ -43,5 +43,8 @@ def fit():
     axs[1].plot(np.arange(len(ADC)), ADC - func(np.arange(len(ADC)), *popt))
     axs[1].set_xlabel('Time (1/750 MHz-1)')
     axs[1].set_ylabel('Residual of fit')
+    axs[2].hist(ADC - func(np.arange(len(ADC)), *popt), bins=20, histtype='step', color='blue')
+    axs[2].set_xlabel('Residual')
+    plt.tight_layout()
     fig.savefig('fit_ADC_scope.pdf')
 fit()
