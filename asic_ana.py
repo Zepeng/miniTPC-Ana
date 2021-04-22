@@ -101,13 +101,17 @@ class ASIC_Ana:
                 if j*6+i > 31:
                     continue
                 lwf = self.amp_chan[str(i)].shape[0]
-                n, bins, patches = ax1[i, j].hist(np.array(self.amp_chan[str(j*6+i)][:int(lwf/2)-100, dp]), bins=20, histtype='step', color='blue')
+                ch_mean = np.mean(self.amp_chan[str(j*6+i)][:int(lwf/2)-100, dp])
+                ch_std = np.std(self.amp_chan[str(j*6+i)][:int(lwf/2)-100, dp])
+                v_bins = np.linspace(ch_mean - 3*ch_std, ch_mean + 3*ch_std, 30)
+                n, bins, patches = ax1[i, j].hist(self.amp_chan[str(j*6+i)][:int(lwf/2)-100, dp], bins = v_bins, histtype='step', color='blue')
+                n_avg, bins_avg, patches = ax1[i, j].hist(np.mean(self.amp_chan[str(j*6+i)][:int(lwf/2)-100, 3:-3], axis=1), bins = v_bins, histtype='step', color='red')
                 if Filtered:
-                    n, bins, patches = ax1[i, j].hist(np.array(self.filt_chan[str(j*6+i)][:int(lwf/2)-100, dp]), bins=20, histtype='step', color='blue')
-                bin_centers = (bins[:-1] + bins[1:])/2
-                print(bins, n)
-                p0=[200, np.mean(bins), 0.001]
-                coeff, var_matric = curve_fit(gauss, bin_centers, n, p0=p0)
+                    n, bins, patches = ax1[i, j].hist(self.filt_chan[str(j*6+i)][:int(lwf/2)-100, dp], bins = v_bins, histtype='step', color='blue')
+                    n_avg, bins_avg, patches = ax1[i, j].hist(np.mean(self.filt_chan[str(j*6+i)][:int(lwf/2)-100, 3:-3], axis=1), bins = v_bins, histtype='step', color='red')
+                bin_centers = (bins_avg[:-1] + bins_avg[1:])/2
+                p0=[4000, np.mean(bins), ch_std]
+                coeff, var_matric = curve_fit(gauss, bin_centers, n_avg, p0=p0)
                 ax1[i, j].plot(bin_centers, gauss(bin_centers, *coeff), color='red')
                 ax1[i, j].text(bins[1], 100, r'$\sigma$=%.4f V' % coeff[2])
         plt.tight_layout()
@@ -127,18 +131,24 @@ class ASIC_Ana:
             batch_noise.append(yf)
             ax.plot(xf, 2.0/N * np.abs(yf[0:N//2]), color='gray')
         mean_noise = np.mean(np.absolute(np.array(batch_noise)), axis=0)
-        ax.plot(xf, 2.0/N * mean_noise[0:N//2], color='black')
+        avg_wf = np.mean(self.amp_chan[str(ch)][:,3:-3], axis=1)
+        avg_noise = fft(avg_wf)
+        ax.plot(xf, 2.0/N * mean_noise[0:N//2], color='black', label='Mean of noise')
+        ax.plot(xf, 2.0/N * avg_noise[0:N//2], color='red', label='Noise of mean wf')
         ax.set_xscale('log')
         ax.set_yscale('log')
         ax.set_xlabel('Frequency (Hz)')
         ax.set_ylabel('Arbitrary Unit.')
         ax.set_ylim(0.1**7, 0.1**3)
+        ax.legend()
         fig.savefig('plots/noise_fft_%d.pdf' % ch)
         plt.close()
 
 if __name__ == '__main__':
-    ftrigger = '/scratchfs/exo/zepengli94/nexo/pcb_20210418/C3c4trigger_c3s1_c2sh31_c1out_DC50_1ms_CalON10fC_CLKON66MHz_10ch00000.csv'
-    fout = '/scratchfs/exo/zepengli94/nexo/pcb_20210418/C1c4trigger_c3s1_c2sh31_c1out_DC50_1ms_CalON10fC_CLKON66MHz_10ch00000.csv'
+    #ftrigger = '/scratchfs/exo/zepengli94/nexo/pcb_20210418/C3c4trigger_c3s1_c2sh31_c1out_DC50_1ms_CalON10fC_CLKON66MHz_10ch00000.csv'
+    #fout = '/scratchfs/exo/zepengli94/nexo/pcb_20210418/C1c4trigger_c3s1_c2sh31_c1out_DC50_1ms_CalON10fC_CLKON66MHz_10ch00000.csv'
+    ftrigger = '/scratchfs/exo/zepengli94/nexo/pcb_v20_20210420/C3c4trigger_c3s1_c2sh31_c1out_DC50_1ms_CalON10fC_CLKON66MHz_25ch00000.csv'
+    fout = '/scratchfs/exo/zepengli94/nexo/pcb_v20_20210420/C1c4trigger_c3s1_c2sh31_c1out_DC50_1ms_CalON10fC_CLKON66MHz_25ch00000.csv'
     ana = ASIC_Ana(ftrigger, fout)
     ana.plot_tick('plots/OneTick.pdf' )
     for n in range(5, 12):
