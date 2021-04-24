@@ -97,6 +97,7 @@ class ASIC_Ana:
 
     def CalcNoise(self, savename, dp:int=5, Filtered:bool=False):
         fig1, ax1 = plt.subplots(6,6, figsize=(15,15))
+        chan_noise = np.zeros(32)
         for i in range(6):
             for j in range(6):
                 if j*6+i > 31:
@@ -115,6 +116,11 @@ class ASIC_Ana:
                 coeff, var_matric = curve_fit(gauss, bin_centers, n_avg, p0=p0)
                 ax1[i, j].plot(bin_centers, gauss(bin_centers, *coeff), color='red')
                 ax1[i, j].text(bins[1], 100, r'$\sigma$=%.4f V' % coeff[2])
+                chan_noise[j*6+i] = coeff[2]
+        self.chan_noise = chan_noise
+        ax1[5,5].plot(np.arange(1,33), chan_noise)
+        ax1[5,5].set_xlabel('Channel Number')
+        ax1[5,5].set_ylabel('Charge Noise (V)')
         plt.tight_layout()
         fig1.savefig(savename)
         plt.close()
@@ -159,9 +165,9 @@ if __name__ == '__main__':
         ana = ASIC_Ana(ftrigger, fout)
         ana.plot_tick('plots/OneTick_{}.pdf'.format(t) )
         for n in range(5, 12):
-            ana.CalcNoise('plots/Noise_dp_{}{}.pdf'.format(n, t), n)
+            ana.CalcNoise('plots/Noise_dp_{}_{}.pdf'.format(n, t), n)
         ana.LowFilter(200000)
         for i in range(1, 33):
-            ana.plot_channels([i], 'plots/chans_{}{}.pdf'.format(i, t))
-            ana.plot_channels([i], 'plots/filt_chans_{}{}.pdf'.format(i,t), True)
-            ana.NoiseFreq('plots/noise_freq_{}{}.pdf'.format(i, t), i)
+            ana.plot_channels([i], 'plots/chans_{}_{}.pdf'.format(i, t))
+            ana.plot_channels([i], 'plots/filt_chans_{}_{}.pdf'.format(i,t), True)
+            ana.NoiseFreq('plots/noise_freq_{}_{}.pdf'.format(i, t), i)
