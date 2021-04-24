@@ -61,35 +61,36 @@ class ASIC_Ana:
         if len(chs) == 1:
             sch = str(chs[0])
             if Filtered:
-                ax[0].plot(np.arange(self.filt_chan[sch].shape[0]), self.filt_chan[sch][:,0])
+                ax[0].plot(np.arange(self.filt_chan[sch].shape[0])/2., np.mean(self.filt_chan[sch][:,3:-3], axis=1))
             else:
-                ax[0].plot(np.arange(self.amp_chan[sch].shape[0]), self.amp_chan[sch][:,0])
+                ax[0].plot(np.arange(self.filt_chan[sch].shape[0])/2., np.mean(self.amp_chan[sch][:,3:-3], axis=1))
             ax[0].set_xlabel('Time ($\mu s$)')
             ax[0].set_ylabel('Ch %d magnitude (V)' % chs[0])
             lwf = self.amp_chan[sch].shape[0]
             if Filtered:
-                ax[1].plot(np.arange(int(lwf/2)-150, int(lwf/2)+150), self.filt_chan[sch][int(lwf/2)-150:int(lwf/2)+150, 0],color='red', label='Filtered' )
-                ax[1].plot(np.arange(int(lwf/2)-150, int(lwf/2)+150), self.amp_chan[sch][int(lwf/2)-150:int(lwf/2)+150, 0], color='blue', label='Raw' )
+                ax[1].plot(np.arange(int(lwf/2)-150, int(lwf/2)+150)/2., np.mean(self.filt_chan[sch][int(lwf/2)-150:int(lwf/2)+150, 3:-3], axis=1),color='red', label='Filtered' )
+                ax[1].plot(np.arange(int(lwf/2)-150, int(lwf/2)+150)/2., np.mean(self.amp_chan[sch][int(lwf/2)-150:int(lwf/2)+150, 3:-3],axis=1), color='blue', label='Raw' )
             else:
-                ax[1].plot(np.arange(int(lwf/2)-150, int(lwf/2)+150), self.amp_chan[sch][int(lwf/2)-150:int(lwf/2)+150, 0] )
+                ax[1].plot(np.arange(int(lwf/2)-150, int(lwf/2)+150)/2., np.mean(self.amp_chan[sch][int(lwf/2)-150:int(lwf/2)+150, 3:-3], axis=1) )
             ax[1].set_xlabel('Time ($\mu s$)')
-
+            ax[1].grid(True)
         else:
             for i in range(len(chs)):
                 sch = str(chs[i])
                 if Filtered:
-                    ax[i,0].plot(np.arange(self.filt_chan[sch].shape[0]), self.filt_chan[sch][:,0])
+                    ax[i,0].plot(np.arange(self.filt_chan[sch].shape[0])/2., self.filt_chan[sch][:,0])
                 else:
-                    ax[i,0].plot(np.arange(self.amp_chan[sch].shape[0]), self.amp_chan[sch][:,0])
+                    ax[i,0].plot(np.arange(self.amp_chan[sch].shape[0])/2., self.amp_chan[sch][:,0])
                 ax[i,0].set_xlabel('Time ($\mu s$)')
                 ax[i,0].set_ylabel('Ch %d magnitude (V)' % chs[i])
                 lwf = self.amp_chan[sch].shape[0]
                 if Filtered:
-                    ax[i,1].plot(np.arange(int(lwf/2)-150, int(lwf/2)+150), self.filt_chan[sch][int(lwf/2)-150:int(lwf/2)+150, 0],color='red', label='Filtered' )
-                    ax[i,1].plot(np.arange(int(lwf/2)-150, int(lwf/2)+150), self.amp_chan[sch][int(lwf/2)-150:int(lwf/2)+150, 0], color='blue', label='Raw' )
+                    ax[i,1].plot(np.arange(int(lwf/2)-150, int(lwf/2)+150)/2., self.filt_chan[sch][int(lwf/2)-150:int(lwf/2)+150, 0],color='red', label='Filtered' )
+                    ax[i,1].plot(np.arange(int(lwf/2)-150, int(lwf/2)+150)/2., self.amp_chan[sch][int(lwf/2)-150:int(lwf/2)+150, 0], color='blue', label='Raw' )
                 else:
-                    ax[i,1].plot(np.arange(int(lwf/2)-150, int(lwf/2)+150), self.amp_chan[sch][int(lwf/2)-150:int(lwf/2)+150, 0] )
+                    ax[i,1].plot(np.arange(int(lwf/2)-150, int(lwf/2)+150)/2., self.amp_chan[sch][int(lwf/2)-150:int(lwf/2)+150, 0] )
                 ax[i,1].set_xlabel('Time ($\mu s$)')
+                ax[i,1].grid(True)
 
         plt.savefig(savename)
         plt.close()
@@ -118,7 +119,7 @@ class ASIC_Ana:
         fig1.savefig(savename)
         plt.close()
 
-    def NoiseFreq(self, ch):
+    def NoiseFreq(self, savename, ch):
         from scipy.fft import fft, fftfreq
         T = 1/2000000.
         N = self.amp_chan[str(ch)].shape[0]
@@ -133,28 +134,34 @@ class ASIC_Ana:
         mean_noise = np.mean(np.absolute(np.array(batch_noise)), axis=0)
         avg_wf = np.mean(self.amp_chan[str(ch)][:,3:-3], axis=1)
         avg_noise = fft(avg_wf)
-        ax.plot(xf, 2.0/N * mean_noise[0:N//2], color='black', label='Mean of noise')
-        ax.plot(xf, 2.0/N * avg_noise[0:N//2], color='red', label='Noise of mean wf')
+        ax.plot(xf, 2.0/N * np.abs(mean_noise[0:N//2]), color='black', label='Mean of noise')
+        ax.plot(xf, 2.0/N * np.abs(avg_noise[0:N//2]), color='red', label='Noise of mean wf')
         ax.set_xscale('log')
         ax.set_yscale('log')
         ax.set_xlabel('Frequency (Hz)')
         ax.set_ylabel('Arbitrary Unit.')
         ax.set_ylim(0.1**7, 0.1**3)
         ax.legend()
-        fig.savefig('plots/noise_fft_%d.pdf' % ch)
+        fig.savefig(savename)
         plt.close()
 
 if __name__ == '__main__':
     #ftrigger = '/scratchfs/exo/zepengli94/nexo/pcb_20210418/C3c4trigger_c3s1_c2sh31_c1out_DC50_1ms_CalON10fC_CLKON66MHz_10ch00000.csv'
     #fout = '/scratchfs/exo/zepengli94/nexo/pcb_20210418/C1c4trigger_c3s1_c2sh31_c1out_DC50_1ms_CalON10fC_CLKON66MHz_10ch00000.csv'
-    ftrigger = '/scratchfs/exo/zepengli94/nexo/pcb_v20_20210420/C3c4trigger_c3s1_c2sh31_c1out_DC50_1ms_CalON10fC_CLKON66MHz_25ch00000.csv'
-    fout = '/scratchfs/exo/zepengli94/nexo/pcb_v20_20210420/C1c4trigger_c3s1_c2sh31_c1out_DC50_1ms_CalON10fC_CLKON66MHz_25ch00000.csv'
-    ana = ASIC_Ana(ftrigger, fout)
-    ana.plot_tick('plots/OneTick.pdf' )
-    for n in range(5, 12):
-        ana.CalcNoise('plots/Noise_dp_%d.pdf' %  n, n)
-    ana.LowFilter(200000)
-    for i in range(14):
-        ana.plot_channels([i], 'plots/chans_%d.pdf' % i)
-        ana.plot_channels([i], 'plots/filt_chans_%d.pdf' % i, True)
-        ana.NoiseFreq(i)
+    #ftrigger = '/scratchfs/exo/zepengli94/nexo/pcb_v20_20210420/C3c4trigger_c3s1_c2sh31_c1out_DC50_1ms_CalON10fC_CLKON66MHz_25ch00000.csv'
+    #fout = '/scratchfs/exo/zepengli94/nexo/pcb_v20_20210420/C1c4trigger_c3s1_c2sh31_c1out_DC50_1ms_CalON10fC_CLKON66MHz_25ch00000.csv'
+    temps = ['RT', '0deg', '-20deg', '-40deg', '-60deg', '-80deg', '-100deg', '-110deg']
+    import os
+    for t in temps:
+        ftrigger = '/scratchfs/exo/zepengli94/nexo/pcb_v20_20210423/C3c2trigger_c3s1_c4sh31_c1out_DC50_1ms_CalON10fC_CLKON66MHz_20ch_{}00000.csv'.format(t)
+        fout = '/scratchfs/exo/zepengli94/nexo/pcb_v20_20210423/C1c2trigger_c3s1_c4sh31_c1out_DC50_1ms_CalON10fC_CLKON66MHz_20ch_{}00000.csv'.format(t)
+        print(os.path.exists(ftrigger))
+        ana = ASIC_Ana(ftrigger, fout)
+        ana.plot_tick('plots/OneTick_{}.pdf'.format(t) )
+        for n in range(5, 12):
+            ana.CalcNoise('plots/Noise_dp_{}{}.pdf'.format(n, t), n)
+        ana.LowFilter(200000)
+        for i in range(1, 33):
+            ana.plot_channels([i], 'plots/chans_{}{}.pdf'.format(i, t))
+            ana.plot_channels([i], 'plots/filt_chans_{}{}.pdf'.format(i,t), True)
+            ana.NoiseFreq('plots/noise_freq_{}{}.pdf'.format(i, t), i)
