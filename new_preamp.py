@@ -64,7 +64,7 @@ class SiPMAna:
         ax[1, 1].plot(x_short, signal.filtfilt(b, a, np.array(self.ds_high[2])[:10000]), color='red', label='Filtered Waveform')
         ax[1, 1].set_xlabel('Time (ns)')
         ax[1, 1].set_ylabel('Magnitude (V)')
-        ax[1, 1].set_title('Channel 1 54 V Bias')
+        ax[1, 1].set_title('Channel 2 54 V Bias')
         #ax[1, 1].legend()
         n, bins, patch = ax[2, 0].hist(np.array(self.ds_low[1]), bins=np.linspace(np.min(self.ds_low[1]), np.max(self.ds_low[1]), 16), histtype='step', color='blue', label='Raw')
         ax[2, 0].hist(filtered_wf1, bins=np.linspace(np.min(self.ds_low[1]), np.max(self.ds_low[1]), 16), histtype='step', color='red', label='Filtered')
